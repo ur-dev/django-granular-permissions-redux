@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from models import Permission
@@ -22,7 +22,7 @@ class MetaClass(type):
 
 class MetaObject(object):
     __metaclass__ = MetaClass
-            
+
 class User(MetaObject):
     def add_row_perm(self, instance, perm):
         if self.has_row_perm(instance, perm, True):
@@ -33,7 +33,7 @@ class User(MetaObject):
         permission.name = perm
         permission.save()
         return True
-        
+
     def del_row_perm(self, instance, perm):
         if not self.has_row_perm(instance, perm, True):
             return False
@@ -41,7 +41,7 @@ class User(MetaObject):
         objects = Permission.objects.filter(user=self, content_type__pk=content_type.id, object_id=instance.id, name=perm)
         objects.delete()
         return True
-        
+
     def has_row_perm(self, instance, perm, only_me=False):
         if self.is_superuser:
             return True
@@ -52,20 +52,29 @@ class User(MetaObject):
         objects = Permission.objects.filter(user=self, content_type__pk=content_type.id, object_id=instance.id, name=perm)
         if objects.count()>0:
             return True
-            
+
         # check groups
         if not only_me:
             for group in self.groups.all():
                 if group.has_row_perm(instance, perm):
                     return True
         return False
-        
+
     def get_rows_with_permission(self, instance, perm):
         content_type = ContentType.objects.get_for_model(instance)
         objects = Permission.objects.filter(Q(user=self) | Q(group__in=self.groups.all()), content_type__pk=content_type.id, name=perm)
         return objects
-        
-            
+
+class AnonymousUser(MetaObject):
+    def add_row_perm(self, instance, perm):
+        return False
+    def del_row_perm(self, instance, perm):
+        return False
+    def has_row_perm(self, instance, perm, only_me=False):
+        return False
+    def get_rows_with_permission(self, instance, perm):
+        return Permission.objects.none()
+
 class Group(MetaObject):
     def add_row_perm(self, instance, perm):
         if self.has_row_perm(instance, perm):
@@ -76,7 +85,7 @@ class Group(MetaObject):
         permission.name = perm
         permission.save()
         return True
-        
+
     def del_row_perm(self, instance, perm):
         if not self.has_row_perm(instance, perm):
             return False
@@ -84,7 +93,7 @@ class Group(MetaObject):
         objects = Permission.objects.filter(user=self, content_type__pk=content_type.id, object_id=instance.id, name=perm)
         objects.delete()
         return True
-        
+
     def has_row_perm(self, instance, perm):
         content_type = ContentType.objects.get_for_model(instance)
         objects = Permission.objects.filter(group=self, content_type__pk=content_type.id, object_id=instance.id, name=perm)
@@ -92,9 +101,8 @@ class Group(MetaObject):
             return True
         else:
             return False
-            
+
     def get_rows_with_permission(self, instance, perm):
         content_type = ContentType.objects.get_for_model(instance)
         objects = Permission.objects.filter(group=self, content_type__pk=contet_type.id, name=perm)
         return objects
-        
