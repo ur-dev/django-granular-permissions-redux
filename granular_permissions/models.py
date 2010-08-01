@@ -51,3 +51,5 @@ else:
         def __unicode__(self):
             return u"%s | %s | %d | %s" % (self.content_type.app_label, self.content_type, self.object_id, self.name)
         
+
+from magic import User, Group, AnonymousUser
