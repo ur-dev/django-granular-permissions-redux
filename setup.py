@@ -7,6 +7,6 @@ setup(name='django granular permissions',
       description='Row-level permissions for Django',
       author='Yazzgoth@googlecode, Ryates@github, Eternicode@bitbucket',
       url='http://bitbucket.org/eternicode/django-granular-permissions',
-      packages=['django-granular-permissions'],
+      packages=['granular_permissions'],
      )
 
